@@ -122,9 +122,9 @@ SQL 语句设置多个参数有几种方式？
 
   		1. 散装参数：需要使用@Param（“SQL 中的参数占位符名称”）
   		2. 实体类封装参数
-       * 只需要保证SQL 中的参数名和实体类属性名对应上，即可设置成功。
+  	   * 只需要保证SQL 中的参数名和实体类属性名对应上，即可设置成功。
   		3. map 集合
-       * 只需要保证 SQL 中的参数明 和 map 集合的键的名称对应上，即可。
+  	   * 只需要保证 SQL 中的参数明 和 map 集合的键的名称对应上，即可。
 
 ![image-20240329114245001](/Users/ding/Library/Application Support/typora-user-images/image-20240329114245001.png)
 
@@ -249,3 +249,64 @@ Mybatis 提供了**ParamNameResolver**类来进行参数封装。
 
 
 
+
+
+
+
+
+
+# 面试题
+
+## MyBatis执行流程
+
+![image-20240401152841440](/Users/ding/Library/Application Support/typora-user-images/image-20240401152841440.png)
+
+1. 读取 Mybatis 配置文件：mybatis-config.xml 加载运行环境和映射文件
+2. 构造会话工厂 SqlSessionFactory
+3. 会话工厂创建SqlSession 对象，（包含了执行 SQL 语句的所有方法）
+4. 操作数据库的接口，Executor 执行器，同时负责查询缓存的维护
+5. Executor 接口的执行方法中有一个 MappedStatement 类型的参数，封装了映射信息
+6. 输入参数映射
+7. 输出结果映射
+
+
+
+## Mybatis是否支持延迟加载
+
+Mybatis 支持延迟加载，但默认没有开启
+
+<img src="/Users/ding/Library/Application Support/typora-user-images/image-20240401153919663.png" alt="image-20240401153919663" style="zoom:25%;" />
+
+**原理**：
+
+1. 使用 CGLIB 创建目标对象的代理对象
+2. 当调用目标方法 user.getOrderList（）时，进入拦截器invoke 方法，发现 user.getOrderList（）是 null 值，执行 sql 查询 order 列表。
+3. 当 order 查询上来，然后调用 user.setOrderList（List<Order> orderList)，接着完成 user.getOrderList（）方法的调用
+
+<img src="/Users/ding/Library/Application Support/typora-user-images/image-20240401154229315.png" alt="image-20240401154229315" style="zoom:50%;" />
+
+
+
+
+
+
+
+![image-20240401154402941](/Users/ding/Library/Application Support/typora-user-images/image-20240401154402941.png)
+
+
+
+### Mybatis的一级、二级缓存用过吗？
+
+* 本地缓存，基于 PerpetualCache，本质是一个 HashMap
+* 一级缓存，作用域是 Session 级别
+* 二级缓存，作用域是 namespace 和 mapper 的作用域，不依赖于 Session
+
+![image-20240401155714263](/Users/ding/Library/Application Support/typora-user-images/image-20240401155714263.png)
+
+![image-20240401155747465](/Users/ding/Library/Application Support/typora-user-images/image-20240401155747465.png)
+
+![image-20240401155807212](/Users/ding/Library/Application Support/typora-user-images/image-20240401155807212.png)
+
+
+
+![image-20240401155820771](/Users/ding/Library/Application Support/typora-user-images/image-20240401155820771.png)
