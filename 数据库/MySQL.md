@@ -796,18 +796,155 @@ select * from employee where entrydate > (select entrydate from employee where n
 | SOME   | 与ANY等同，使用SOME的地方都可以使用ANY |
 | ALL    | 子查询返回列表的所有值都必须满足 |
 
+例子：
+```sql
+-- 查询销售部和市场部的所有员工信息
+select * from employee where dept in (
+            select id from dept where name = '销售部' or name = '市场部');
 
+-- 查询比财务部所有人工资都高的员工信息
+select * from employee 
+         where salary > all(
+            select salary from employee where dept = (
+                select id from dept where name = '财务部'));
 
+-- 查询比研发部任意一人工资高的员工信息
+select * from employee where salary > any(
+        select salary from employee where dept = (
+            select id from dept where name = '研发部'));
+```
 
+##### 行子查询
+
+返回的结果是一行（可以是多列）。
+常用操作符：=, <, >, IN, NOT IN
+
+例子：
+```sql
+-- 查询与xxx的薪资及直属领导相同的员工信息
+select * from employee 
+         where (salary, manager) = (12500, 1);
+
+select * from employee 
+         where (salary, manager) = (
+            select salary, manager from employee where name = 'xxx');
+```
+
+##### 表子查询
+
+返回的结果是多行多列
+常用操作符：IN
+
+例子：
+```sql
+-- 查询与xxx1，xxx2的职位和薪资相同的员工
+select * from employee 
+         where (job, salary) in (
+            select job, salary from employee where name = 'xxx1' or name = 'xxx2');
+
+-- 查询入职日期是2006-01-01之后的员工，及其部门信息
+select e.*, d.* 
+from (
+    select * from employee 
+    where entrydate > '2006-01-01') as e 
+left join dept as d on e.dept = d.id;
+
+```
 
 
 
 
 ### 事务
 
+事务是一组操作的集合，事务会把所有操作作为一个整体一起向系统提交或撤销操作请求，
+即这些操作要么同时成功，要么同时失败。
+
+* 基本操作：
+```sql
+-- 1. 查询张三账户余额
+select * from account where name = '张三';
+-- 2. 将张三账户余额-1000
+update account set money = money - 1000 where name = '张三';
+-- 此语句出错后张三钱减少但是李四钱没有增加模拟sql语句错误
+  
+-- 3. 将李四账户余额+1000
+update account set money = money + 1000 where name = '李四';
+-- 查看事务提交方式
+SELECT @@AUTOCOMMIT;
+-- 设置事务提交方式，1为自动提交，0为手动提交，该设置只对当前会话有效
+SET @@AUTOCOMMIT = 0;
+-- 提交事务
+COMMIT;
+-- 回滚事务
+ROLLBACK;
+
+-- 设置手动提交后上面代码改为：
+select * from account where name = '张三';
+update account set money = money - 1000 where name = '张三';
+update account set money = money + 1000 where name = '李四';
+commit;
+```
+
+* 操作方式二：
+```sql
+-- 开启事务：
+START TRANSACTION;
+    或 
+BEGIN TRANSACTION;
+-- 提交事务：
+COMMIT;
+-- 回滚事务：
+ROLLBACK;
+```
+
+* 操作实例：
+
+```sql
+start transaction;
+select * from account where name = '张三';
+update account set money = money - 1000 where name = '张三';
+update account set money = money + 1000 where name = '李四';
+commit;
+```
+
+
 #### 四大特性 ACID
 
+* 原子性(Atomicity)：事务是不可分割的最小操作但愿，要么全部成功，要么全部失败
+* 一致性(Consistency)：事务完成时，必须使所有数据都保持一致状态
+* 隔离性(Isolation)：数据库系统提供的隔离机制，保证事务在不受外部并发操作影响的独立环境下运行
+* 持久性(Durability)：事务一旦提交或回滚，它对数据库中的数据的改变就是永久的
+
 #### 并发事务
+
+| 问题 | 描述 |
+|----|----|
+| 脏读 | 一个事务读到另一个事务还没提交的数据 |
+| 不可重复读 | 一个事务先后读取同一条记录，但两次读取的数据不同 |
+| 幻读 | 一个事务按照条件查询数据时，没有对应的数据行，但是再插入数据时，又发现这行数据已经存在 |
+
+* 隔离级别
+
+| 隔离级别 | 脏读 | 不可重复读 | 幻读 |
+|------|---- |----|----|
+| READ UNCOMMITTED | 允许 | 允许 | 允许 |
+| READ COMMITTED | 不允许 | 允许 | 允许 |
+| REPEATABLE READ | 不允许 | 不允许 | 允许 |
+| SERIALIZABLE | 不允许 | 不允许 | 不允许 |
+
+* Serializable 性能最低；Read uncommitted 性能最高，数据安全性最差
+```sql
+-- 查看事务隔离级别：
+SELECT @@TRANSACTION_ISOLATION;
+-- 设置事务隔离级别：
+SET [ SESSION | GLOBAL ] 
+    TRANSACTION ISOLATION LEVEL 
+    {READ UNCOMMITTED | READ COMMITTED | REPEATABLE READ | SERIALIZABLE };
+-- SESSION 是会话级别，表示只针对当前会话有效，GLOBAL 表示对所有会话有效
+```
+
+# 进阶篇
+
 
 
 
@@ -853,5 +990,7 @@ select * from employee where entrydate > (select entrydate from employee where n
 
 
 
+# 笔记
 
+select 去重 distinct
 
